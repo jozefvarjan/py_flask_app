@@ -58,7 +58,6 @@ def create_store():
     )
     
 
-
 @app.post("/store/<string:name>/item")
 def create_item(name):
     request_data = request.get_json()
