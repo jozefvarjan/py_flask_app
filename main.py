@@ -1,53 +1,47 @@
+import uuid
 from flask import Flask, request, Response
-
+from db import stores, items
 
 
 app = Flask(__name__)
 
-
-stores = [
-    {
-        "name": "My Store",
-        "items": [
-            {
-                "name": "Chair",
-                "price": 15.99
-            }
-        ]
-    }
-]
 
 class ResponseMsgObj:
     def __new__(self, err_msg:dict[str, str | Response]):
         return err_msg
 
 
-@app.route('/')
-def root(): 
-    return '<b>This is root app screen!</b>'
 
+# --- store(s)
 
-@app.route('/stores')
+@app.get('/stores')
 def get_stores():
     return {
-        "stores": stores
+        "stores": list(stores.values())
         }
 
 
-@app.route('/users/<user>')
-def get_user(user):
-    import os
-    return {
-        "user": user,
-        "uname": str(os.environ['USERNAME'])
-    }
+@app.get("/store/<string:store_id>")
+def get_store(store_id):
+    try:
+        return {"store": stores[store_id]}
+    except KeyError:
+        response = Response()
+        return ResponseMsgObj(
+            {
+                "status_code": response.status_code,
+                "status": response.status,
+                "err_msg": f"store: {stores[store_id]} not found!"
+            }
+        )
 
 
 @app.post('/store')
 def create_store(): 
-    request_data = request.get_json()
-    new_store = {"name": request_data['name'], "items": []}
-    stores.append(new_store)
+    store_data = request.get_json()
+    store_id = uuid.uuid4().hex
+    new_store = {"id": store_id, **store_data}
+    stores[store_id] = new_store
     response = Response()
     return ResponseMsgObj(
         {
@@ -56,46 +50,44 @@ def create_store():
         "data": new_store
         }
     )
+
+
+
+# --- item(s)
+
+@app.get("/item/<string:item_id>")
+def get_item(item_id):
+    try:
+        return items[item_id]
+    except KeyError:
+        return ResponseMsgObj(
+            {
+                "status_code": 404,
+                "message": f"{items[item_id]}: not found!"
+            }
+        )
     
 
-@app.post("/store/<string:name>/item")
-def create_item(name):
-    request_data = request.get_json()
+@app.get("/items")
+def get_items():
+    return {"items": list(items.values())}
+
+
+@app.post("/item")
+def create_item():
+    item_data = request.get_json()
     response = Response()
-    for store in stores:
-        if store["name"] == name:
-            new_item = {
-                "name": request_data["name"],
-                "price": request_data["price"]
-            }
-            store["items"].append(new_item)
-            return ResponseMsgObj(
-                {
-                    "status": response.status, 
-                    "status_code": response.status_code
-                }
-            )
+
+    item_id = uuid.uuid4().hex
+    item = {"id": item_id, **item_data}
+    items[item_id] = item
     return ResponseMsgObj(
         {
-            "status_code": 404, 
-            "message": f"{name} not found!"
+            "status": response.status, 
+            "status_code": response.status_code,
+            "payload": items[item_id]
         }
     )
 
 
-@app.get("/store/<string:name>")
-def get_store_item(name):
-    for store in stores:
-        if store["name"] == name:
-            return ResponseMsgObj(
-                {
-                    "items": store["items"]
-                }
-            )
-    return ResponseMsgObj(
-        {
-            "status_code": 404,
-            "message": f"{name}: not found!"
-        }
-    )
     
