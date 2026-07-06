@@ -55,8 +55,9 @@ def get_store(store_id):
 
 @app.put("/store/<string:store_id>")
 def update_store(store_id):
+    store_data = request.get_json()
     try:
-        stores[store_id] = request.get_json()["name"]
+        stores[store_id] = {"id": store_id, "name": store_data["name"]}
         return {"store": stores[store_id]}
     except KeyError: abort(404, message="not found")
 
