@@ -12,3 +12,4 @@ class ItemTable(db.Model):
 
     def __repr__(self):
         return f"item: {self.title, self.format, self.year, self.price}"
+ 
